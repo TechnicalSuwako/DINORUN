@@ -10,10 +10,8 @@ DINORUNで、ジャンプしか出来ません。
 * Arduino IDE
 
 ## 写真
-![]()\
-![]()\
-![]()\
-![]()
+![](https://ass.technicalsuwako.moe/dinorun-1.png)\
+![](https://ass.technicalsuwako.moe/dinorun-2.png)
 
 ## 動画
 [見ろ](https://video.076.moe/)
