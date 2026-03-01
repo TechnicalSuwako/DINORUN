@@ -1,0 +1,22 @@
+# DINORUN for Arduino
+このプロジェクトは１時間以内に作れました。\
+DINORUNで、ジャンプしか出来ません。
+
+## 必要なハード
+* Arduino Uno R3
+* Grove Starter Kit（ベースシールド、LCD、ボタン、バザー）
+
+## 必要なソフト
+* Arduino IDE
+
+## 写真
+![]()\
+![]()\
+![]()\
+![]()
+
+## 動画
+[見ろ](https://video.076.moe/)
+
+## ブログ投稿
+[テクニカル諏訪子](https://technicalsuwako.moe/cpp-dinorun-arduino)
