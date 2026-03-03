@@ -17,4 +17,4 @@ DINORUNで、ジャンプしか出来ません。
 [見ろ](https://video.076.moe/w/21P1rcyVxJ5PZhBYUmvuc2)
 
 ## ブログ投稿
-[テクニカル諏訪子](https://technicalsuwako.moe/cpp-dinorun-arduino)
+[テクニカル諏訪子](https://technicalsuwako.moe/blog/cpp-dinorun-arduino)
