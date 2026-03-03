@@ -45,15 +45,6 @@ byte coin[8] = {
   0b00100
 };
 
-void setup() {
-  pinMode(pinBuzzer, OUTPUT);
-  attachInterrupt(digitalPinToInterrupt(pinButton), buttonHandler, RISING);
-  lcd.begin(16, 2);
-  lcd.createChar(7, dino);
-  lcd.createChar(6, rock);
-  lcd.createChar(5, coin);
-}
-
 char dinoChar = byte(7);
 char rockChar = byte(6);
 char coinChar = byte(5);
@@ -62,8 +53,11 @@ bool jump = false;
 bool jumping = false;
 bool died = false;
 unsigned long jumpTime = 0;
+const unsigned long jumpDuration = 350;
+
 int score = 0;
 int dinoY = 1;
+
 const int initRocks[] = { 5, 12, 16, 19, 23, 27, 30, 34, 36, 39, 41, 44, 47, 49, 52 };
 const int countRocks = sizeof(initRocks) / sizeof(initRocks[0]);
 int rockX[countRocks];
@@ -71,75 +65,97 @@ const int initCoins[] = { 8, 17, 25, 29, 32, 40, 43, 48, 55};
 const int countCoins = sizeof(initCoins) / sizeof(initCoins[0]);
 int coinX[countCoins];
 
-void buttonHandler() {
-  if (jumping || died) return;
-  play(pinBuzzer, 523, 0, 100);
-  switch (state) {
-    case Start:
-      state = Play;
-      break;
-    case Play:
-      jumpTime = 0;
-      jump = true;
-      break;
-    case Dead:
-      state = Start;
-      break;
-  }
-}
-
-int gameSpeed = 150;
+int gameSpeed = 200;
 unsigned long lastMove = 0;
 
-void titlescreen() {
-  char buf1[16], buf2[16];
-  lcd.clear();
-  lcd.setCursor(4, 0);
-  lcd.print("DINO RUN");
-  lcd.setCursor(0, 1);
-  sprintf(buf2, "%c    %c  %c   %c", dinoChar, rockChar, coinChar, rockChar);
-  lcd.print(buf2);
+unsigned long deathShowStart = 0;
+const unsigned long deathScreenMinTime = 2000;
+
+volatile bool btnPressed = false;
+
+void setup() {
+  pinMode(pinBuzzer, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(pinButton), buttonHandler, RISING);
+  lcd.begin(16, 2);
+  lcd.createChar(7, dino);
+  lcd.createChar(6, rock);
+  lcd.createChar(5, coin);
+  resetGame();
+}
+
+void buttonHandler() {
+  btnPressed = true;
+}
+
+void resetGame() {
   score = 0;
   jump = false;
   jumping = false;
   jumpTime = 0;
   dinoY = 1;
-  lastMove = 0;
+  lastMove = millis();
+  deathShowStart = 0;
+  lcd.setRGB(0, 0, 255);
 
-  for (int i = 0; i < sizeof(rockX) / sizeof(rockX[0]); ++i) {
+  for (int i = 0; i < countRocks; ++i) {
     rockX[i] = initRocks[i];
   }
 
-  for (int i = 0; i < sizeof(coinX) / sizeof(coinX[0]); ++i) {
+  for (int i = 0; i < countCoins; ++i) {
     coinX[i] = initCoins[i];
+  }
+}
+
+void titlescreen() {
+  char buf[16];
+  lcd.clear();
+  lcd.setCursor(4, 0);
+  lcd.print("DINO RUN");
+  lcd.setCursor(0, 1);
+  sprintf(buf, "%c    %c  %c   %c", dinoChar, rockChar, coinChar, rockChar);
+  lcd.print(buf);
+
+  if (btnPressed) {
+    btnPressed = false;
+    state = Play;
+    resetGame();
   }
 }
 
 void gameplay() {
   unsigned long now = millis();
-  if (now - lastMove >= gameSpeed) {
-    lastMove = now;
 
-    for (int i = 0; i < sizeof(rockX) / sizeof(int); ++i) {
-      rockX[i]--;
-      if (rockX[i] < -1) rockX[i] = 25 + random(15);
-    }
-  
-    for (int i = 0; i < sizeof(coinX) / sizeof(int); ++i) {
-      coinX[i]--;
-      if (coinX[i] < -1) coinX[i] = 30 + random(20);
+  if (btnPressed) {
+    btnPressed = false;
+    if (!jumping) {
+      tone(pinBuzzer, 523, 100);
+      jump = true;
+      jumpTime = now;
     }
   }
 
   if (jump) {
     jumping = true;
-    jumpTime++;
     dinoY = 0;
-    if (jumpTime > 1) jump = false;
-  } else {
-    jumping = false;
-    jumpTime = 0;
-    dinoY = 1;
+    if (now - jumpTime >= jumpDuration) {
+      jump = false;
+      jumping = false;
+      dinoY = 1;
+    }
+  }
+
+  if (now - lastMove >= (unsigned long)gameSpeed) {
+    lastMove = now;
+
+    for (int i = 0; i < countRocks; ++i) {
+      rockX[i]--;
+      if (rockX[i] < -1) rockX[i] = 25 + random(12, 22);
+    }
+  
+    for (int i = 0; i < countCoins; ++i) {
+      coinX[i]--;
+      if (coinX[i] < -1) coinX[i] = 32 + random(15, 30);
+    }
   }
 
   lcd.clear();
@@ -160,31 +176,46 @@ void gameplay() {
   lcd.setCursor(1, dinoY);
   lcd.print(player);
 
-  for (int i = 0; i < sizeof(rockX) / sizeof(rockX[0]); ++i) {
+  bool hit = false;
+  for (int i = 0; i < countRocks; ++i) {
     int x = rockX[i];
     if (x >= 0 && x < 16) {
       lcd.setCursor(x, 1);
       lcd.print(obstacle);
       if (dinoY == 1 && x == 1) {
-        play(pinBuzzer, 698, 0, 1000);
-        delay(1000);
-        state = Dead;
-        died = true;
+        hit = true;
       }
     }
   }
 
-  for (int i = 0; i < sizeof(coinX) / sizeof(coinX[0]); ++i) {
+  for (int i = 0; i < countCoins; ++i) {
     int x = coinX[i];
-    if (x >= 0 && x < 16 && coinX[i] != 0) {
+    if (x >= 0 && x < 16) {
       lcd.setCursor(x, 1);
-      if (dinoY == 1 && x == 1 && score <= 999) score++;
+      if (dinoY == 1 && x == 1) {
+        tone(pinBuzzer, 880, 80);
+        score++;
+      }
       else lcd.print(collect);
+    }
+  }
+
+  if (hit) {
+    unsigned long n = millis();
+    lcd.setRGB(255, 0, 0);
+    tone(pinBuzzer, 698, 1000);
+
+    if (n >= 2000) {
+      state = Dead;
+      deathShowStart = now;
     }
   }
 }
 
 void dead() {
+  unsigned long now = millis();
+  lcd.setRGB(0, 0, 255);
+
   lcd.clear();
   char buf[16];
   lcd.setCursor(3, 0);
@@ -192,10 +223,12 @@ void dead() {
   lcd.print(buf);
   lcd.setCursor(4, 1);
   lcd.print("GAMEOVER");
+  if (now - deathShowStart < deathScreenMinTime) return;
 
-  if (died) {
-    delay(1000);
-    died = false;
+  if (btnPressed) {
+    btnPressed = false;
+    state = Start;
+    resetGame();
   }
 }
 
