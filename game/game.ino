@@ -63,6 +63,7 @@ const int countRocks = sizeof(initRocks) / sizeof(initRocks[0]);
 int rockX[countRocks];
 const int initCoins[] = { 8, 17, 25, 29, 32, 40, 43, 48, 55};
 const int countCoins = sizeof(initCoins) / sizeof(initCoins[0]);
+bool coinCollected[countCoins] = {};
 int coinX[countCoins];
 
 int gameSpeed = 200;
@@ -103,6 +104,7 @@ void resetGame() {
 
   for (int i = 0; i < countCoins; ++i) {
     coinX[i] = initCoins[i];
+    coinCollected[i] = false;
   }
 }
 
@@ -149,7 +151,7 @@ void gameplay() {
 
     for (int i = 0; i < countRocks; ++i) {
       rockX[i]--;
-      if (rockX[i] < -1) rockX[i] = 25 + random(12, 22);
+      if (rockX[i] < -1) rockX[i] = 28 + random(12, 22);
     }
   
     for (int i = 0; i < countCoins; ++i) {
@@ -192,11 +194,11 @@ void gameplay() {
     int x = coinX[i];
     if (x >= 0 && x < 16) {
       lcd.setCursor(x, 1);
-      if (dinoY == 1 && x == 1) {
+      if (dinoY == 1 && x == 1 && !coinCollected[i]) {
         tone(pinBuzzer, 880, 80);
         score++;
-      }
-      else lcd.print(collect);
+        coinCollected[i] = true;
+      } else if (!coinCollected[i]) lcd.print(collect);
     }
   }
 
